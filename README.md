@@ -14,7 +14,7 @@ go get github.com/codeudan/k
 
 or
 
-download k.exe directly
+download exec file in OS name folder
 
 
 ## Develop
