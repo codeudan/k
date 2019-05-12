@@ -90,10 +90,11 @@ func listProcess(pidToPorts map[string][]string) []ps {
 		comm := line[len(pid)+1:]
 		ports := pidToPorts[pid]
 		portsStr := ""
-		if len(ports) > portMaxDisplay {
-			portStart := ports[0]
-			portEnd := ports[len(ports)-1]
-			portsStr = portsStr + " " + portStart + " ··· " + portEnd
+		portsLen := len(ports)
+		if portsLen > portMaxDisplay {
+			portStart := []string{ports[0], ports[1], ports[2]}
+			portEnd := []string{ports[portsLen-3], ports[portsLen-2], ports[portsLen-1]}
+			portsStr = strings.Join(portStart, ", ") + " ··· " + strings.Join(portEnd, ", ")
 		} else {
 			portsStr = portsStr + " " + strings.Join(ports, ", ")
 		}
