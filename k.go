@@ -14,7 +14,7 @@ import (
 )
 
 const size int = 10
-const portMaxDisplay int = 5
+const portMaxDisplay int = 6
 
 func main() {
 	if runtime.GOOS == "windows" {
@@ -24,6 +24,7 @@ func main() {
 
 	pidToPorts := listPortByPid()
 	psList := listProcess(pidToPorts)
+
 	prompt := promptui.Select{
 		Label:             "",
 		Items:             psList,
@@ -37,8 +38,8 @@ func main() {
 			FuncMap: template.FuncMap{
 				"faint":    promptui.Styler(0, 0, 31),
 				"cyan":     promptui.Styler(0, 0, 36),
-				"red":      promptui.Styler(2, 40, 31),
-				"redLight": promptui.Styler(0, 0, 31),
+				"red":      promptui.Styler(2, 40, 35),
+				"redLight": promptui.Styler(0, 0, 35),
 			},
 		},
 		Searcher: func(input string, idx int) bool {
@@ -113,10 +114,24 @@ func listProcess(pidToPorts map[string][]string) []ps {
 
 func listPortByPid() map[string][]string {
 	validNetLineRegStr := "^\\s*(tcp|udp)"
-	allFieldsReg, _ := regexp.Compile("([\\w*.*])+")
-	portReg, _ := regexp.Compile("[^]*[.:](\\d+)$")
+	allFieldsReg, _ := regexp.Compile("\\S+")
+	portReg, _ := regexp.Compile(".*[.:](\\d+)$")
+	pidReg, _ := regexp.Compile("(?:^|\",|\",pid=)(\\d+)")
 
 	osName := runtime.GOOS
+	portPidIdx := map[string]int{}
+	if osName == "darwin" {
+		portPidIdx = map[string]int{
+			"port": 3,
+			"pid":  8,
+		}
+	}
+	if osName == "linux" {
+		portPidIdx = map[string]int{
+			"port": 4,
+			"pid":  6,
+		}
+	}
 	pidToPorts := map[string][]string{}
 	cmdOutput := getNetstatOutput()
 	lists := strings.Split(strings.TrimSpace(cmdOutput), "\n")
@@ -131,24 +146,24 @@ func listPortByPid() map[string][]string {
 			start := append(allFields[0:5], "")
 			allFields = append(start, end...)
 		}
-		portData := []string{}
+		port := ""
 		pid := ""
-		if osName == "darwin" {
-			portData = portReg.FindAllString(allFields[3], -1)
-			pid = allFields[8]
+		portData := portReg.FindStringSubmatch(allFields[portPidIdx["port"]])
+		if len(portData) > 0 {
+			port = portData[1]
 		}
-		if osName == "linux" {
-			portData = portReg.FindAllString(allFields[4], -1)
-			pid = allFields[6]
+		pidParsed := pidReg.FindStringSubmatch(allFields[portPidIdx["pid"]])
+		if len(pidParsed) > 0 {
+			pid = pidParsed[1]
+		}
+		if pid == "" || port == "" {
+			continue
 		}
 		if pidToPorts[pid] == nil {
 			pidToPorts[pid] = []string{}
 		}
-		if len(portData) > 0 {
-			port := portData[0]
-			if !contains(pidToPorts[pid], port) {
-				pidToPorts[pid] = append(pidToPorts[pid], port)
-			}
+		if !contains(pidToPorts[pid], port) {
+			pidToPorts[pid] = append(pidToPorts[pid], port)
 		}
 	}
 	return pidToPorts
@@ -185,7 +200,7 @@ func kill(pid string) {
 	killCmd := exec.Command("kill", pid)
 	_, killErr := killCmd.Output()
 	if killErr == nil {
-		fmt.Println("  Killed ")
+		printKill()
 		return
 	}
 	prompt := promptui.Prompt{
@@ -195,8 +210,12 @@ func kill(pid string) {
 	confirm, _ := prompt.Run()
 	if confirm == "y" {
 		killCmd := exec.Command("kill", "-9", pid)
-		killCmd.Output()
-		fmt.Println("  Killed ")
+		_, killErr := killCmd.Output()
+		if killErr == nil {
+			printKill()
+			return
+		}
+		errorHandler(killErr)
 	}
 }
 
@@ -212,4 +231,9 @@ func contains(list []string, s string) bool {
 func errorHandler(err error) {
 	fmt.Println(err)
 	os.Exit(1)
+}
+
+func printKill() {
+	fmt.Printf(" %c[%d;%d;%dm Killed%c[0m ", 0x1B, 0, 0, 35, 0x1B)
+	fmt.Println("")
 }
