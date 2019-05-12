@@ -4,14 +4,9 @@ K 是个 CLI 工具，提供简便的杀死进程的方法。K 基本是 [fkill-
 
 <img src="./show.jpg" alt="" style="with:400px;height:202px">
 
-## 安装
+## 安装和使用
 
-go get github.com/codeudan/k
-
-或者
-
-从 release 下载可执行文件来直接使用
-
+go get github.com/codeudan/k 或者 从 release 下载可执行文件后输入 k 使用。
 
 ## 开发
 git clone
