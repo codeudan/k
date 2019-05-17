@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"text/template"
 
 	"github.com/manifoldco/promptui"
 )
@@ -32,15 +31,9 @@ func main() {
 		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{
 			Label:    "Running processes:",
-			Active:   `{{"❯ " | cyan }}{{.Name | cyan}} {{ "(" | cyan}}{{ .Pid | cyan }}{{")" | cyan}} {{ .PortsStr | redLight}}`,
+			Active:   `{{"❯ " | cyan }}{{.Name | cyan}} {{ "(" | cyan}}{{ .Pid | cyan }}{{")" | cyan}} {{ .PortsStr | red}}`,
 			Inactive: `  {{.Name }} ({{ .Pid }}) {{ .PortsStr | red}}`,
 			Selected: `  {{.Name }} ({{ .Pid }}) {{ .PortsStr | red}}`,
-			FuncMap: template.FuncMap{
-				"faint":    promptui.Styler(0, 0, 31),
-				"cyan":     promptui.Styler(0, 0, 36),
-				"red":      promptui.Styler(2, 40, 35),
-				"redLight": promptui.Styler(0, 0, 35),
-			},
 		},
 		Searcher: func(input string, idx int) bool {
 			p := psList[idx]
